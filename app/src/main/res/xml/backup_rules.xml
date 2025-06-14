@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- 包含在备份中的数据 -->
+    <include domain="sharedpref" path="."/>
+    <include domain="database" path="."/>
+    <include domain="file" path="."/>
+    
+    <!-- 排除敏感和临时数据 -->
+    <exclude domain="sharedpref" path="api_keys.xml"/>
+    <exclude domain="sharedpref" path="user_tokens.xml"/>
+    <exclude domain="database" path="location_history.db"/>
+    <exclude domain="file" path="cache/"/>
+    <exclude domain="file" path="temp/"/>
+    
+    <!-- 排除大文件 -->
+    <exclude domain="file" path="maps_cache/"/>
+    <exclude domain="file" path="offline_maps/"/>
+</full-backup-content>
