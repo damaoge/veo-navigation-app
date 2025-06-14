@@ -1,18 +1,17 @@
-# Veo 导航应用
+# Veo Navigation App
 
-一个功能完整的Android导航应用，支持Google Maps和高德地图双地图提供商，提供实时导航服务。
+一个功能完整的Android导航应用，基于高德地图提供实时导航服务。
 
 ## 功能特性
 
 ### 核心功能
-- ✅ **双地图支持**: 集成Google Maps和高德地图，支持动态切换
+- ✅ **高德地图集成**: 基于高德地图SDK提供地图服务
 - ✅ **地图显示**: 支持多种地图类型和样式
 - ✅ **位置服务**: 实时获取用户当前位置
 - ✅ **目的地选择**: 点击地图选择目的地
-- ✅ **路线规划**: 支持Google Directions API和高德路线规划
+- ✅ **路线规划**: 基于高德路线规划API
 - ✅ **实时导航**: 提供逐步导航指引
 - ✅ **行程总结**: 显示行程时长、距离和平均速度
-- 🔄 **地图切换**: 运行时动态切换地图提供商
 
 ### 用户体验
 - 🎨 **现代化UI**: 采用Material Design 3设计规范
@@ -27,8 +26,8 @@
 - **最低SDK版本**: Android 7.0 (API 24)
 - **目标SDK版本**: Android 14 (API 34)
 - **架构模式**: MVVM
-- **地图服务**: Google Maps SDK + 高德地图SDK
-- **位置服务**: Google Play Services Location + 高德定位SDK
+- **地图服务**: 高德地图SDK
+- **位置服务**: 高德定位SDK
 - **UI框架**: Material Design 3
 - **权限管理**: EasyPermissions
 
@@ -39,7 +38,7 @@ NavigationApp/
 ├── app/
 │   ├── src/main/
 │   │   ├── java/com/veo/navigationapp/
-│   │   │   ├── MainActivityNew.kt          # 主Activity（支持双地图）
+│   │   │   ├── MainActivityNew.kt          # 主Activity
 │   │   │   ├── TripSummaryDialog.kt        # 行程总结对话框
 │   │   │   ├── config/
 │   │   │   │   └── MapProvider.kt          # 地图提供商配置
@@ -47,7 +46,6 @@ NavigationApp/
 │   │   │   │   └── MapServiceFactory.kt    # 地图服务工厂
 │   │   │   ├── service/
 │   │   │   │   ├── IMapService.kt          # 地图服务接口
-
 │   │   │   │   └── AMapService.kt          # 高德地图服务实现
 │   │   │   ├── model/
 │   │   │   │   └── TripSummary.kt          # 行程数据模型
@@ -69,28 +67,7 @@ NavigationApp/
 
 ## 安装和配置
 
-### 1. 克隆项目
-```bash
-git clone <repository-url>
-cd NavigationApp
-```
-
-### 2. 配置地图API
-
-#### Google Maps API配置
-1. 访问 [Google Cloud Console](https://console.cloud.google.com/)
-2. 创建新项目或选择现有项目
-3. 启用以下API：
-   - Maps SDK for Android
-   - Directions API
-   - Places API (可选)
-4. 创建API密钥
-5. 在 `local.properties` 文件中设置API密钥：
-   ```
-   MAPS_API_KEY=你的Google Maps API密钥
-   ```
-
-#### 高德地图API配置
+### 高德地图API配置
 1. 访问 [高德开放平台](https://lbs.amap.com/)
 2. 注册开发者账号并创建应用
 3. 获取Android平台的API Key
@@ -105,25 +82,14 @@ cd NavigationApp
        android:value="你的高德地图API密钥" />
    ```
 
-### 3. 构建项目
-```bash
-./gradlew build
-```
-
-### 4. 运行应用
-```bash
-./gradlew installDebug
-```
-
 ## 使用说明
 
 ### 基本操作
 1. **启动应用**: 应用会自动请求位置权限
-2. **切换地图**: 点击左上角的地图切换按钮在Google Maps和高德地图间切换
-3. **查看当前位置**: 点击右下角的定位按钮
-4. **选择目的地**: 在地图上点击任意位置设置目的地
-5. **开始导航**: 点击"开始导航"按钮
-6. **查看行程总结**: 导航结束后查看详细统计信息
+2. **查看当前位置**: 点击右下角的定位按钮
+3. **选择目的地**: 在地图上点击任意位置设置目的地
+4. **开始导航**: 点击"开始导航"按钮
+5. **查看行程总结**: 导航结束后查看详细统计信息
 
 ### 权限要求
 - **位置权限**: 用于获取当前位置和导航
@@ -146,15 +112,8 @@ cd NavigationApp
 - 位置服务相关代码在 `LocationHelper.kt`
 - 路线规划相关代码在 `DirectionsHelper.kt`
 - 地图服务抽象接口在 `IMapService.kt`
-
 - 高德地图实现在 `AMapService.kt`
-- 地图提供商配置在 `MapProvider.kt`
 - 根据需要扩展这些工具类
-
-### 地图提供商切换
-- 在 `MapProvider.kt` 中修改 `MapConfig.currentProvider` 的默认值
-- 支持的提供商：`MapProvider.GOOGLE_MAPS` 和 `MapProvider.AMAP`
-- 当前默认使用：**高德地图**
 
 ## 注意事项
 
@@ -178,20 +137,13 @@ cd NavigationApp
 ### 常见问题
 
 **Q: 地图无法加载**
-A: 检查对应地图的API密钥是否正确配置
-- Google Maps: 确保已启用Maps SDK for Android
-- 高德地图: 确保API密钥已在AndroidManifest.xml中正确配置
+A: 检查高德地图API密钥是否正确配置，确保API密钥已在AndroidManifest.xml中正确配置
 
 **Q: 无法获取当前位置**
 A: 确认已授予位置权限，检查设备GPS是否开启
 
 **Q: 路线规划失败**
-A: 检查网络连接，确认对应API已正确配置
-- Google Maps: 确认已启用Directions API
-- 高德地图: 确认高德API密钥有效
-
-**Q: 地图切换失败**
-A: 确保两个地图的API密钥都已正确配置，检查网络连接
+A: 检查网络连接，确认高德API密钥有效
 
 **Q: 应用崩溃**
 A: 查看Logcat输出，检查是否有权限或API相关错误
@@ -205,14 +157,6 @@ A: 查看Logcat输出，检查是否有权限或API相关错误
 - 📊 行程总结
 - 🎨 Material Design 3 UI
 
-## 贡献指南
-
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
-
 ## 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
@@ -220,8 +164,7 @@ A: 查看Logcat输出，检查是否有权限或API相关错误
 ## 联系方式
 
 - 项目维护者: Veo Team
-- 邮箱: support@veo.com
-- 项目链接: [GitHub Repository](https://github.com/veo/navigation-app)
+- 邮箱: haisilen@163.com
 
 ---
 
