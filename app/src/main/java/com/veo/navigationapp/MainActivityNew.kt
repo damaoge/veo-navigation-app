@@ -44,11 +44,17 @@ class MainActivityNew : AppCompatActivity() {
     
     private var currentLocation: Location? = null
     private var destinationMarker: Any? = null
+    private var originMarker: Any? = null
     private var destinationLocation: LatLng? = null
+    private var originLocation: LatLng? = null
     private var currentRoute: Any? = null
     private var isNavigating = false
     private var tripStartTime: Long = 0
     private var totalDistance: Float = 0f
+    
+    // Two-click mode state
+    private var isSettingOrigin = true // true: setting origin, false: setting destination
+    private var clickCount = 0
     
     // AMap related
     private var aMap: AMap? = null
@@ -82,14 +88,17 @@ class MainActivityNew : AppCompatActivity() {
         mapService = MapServiceFactory.createMapService(this)
         addLog("Map service creation completed")
         
-        // Test API connection
-        testDirectionsApi()
+        // Test API connection (disabled to avoid log confusion)
+        // testDirectionsApi()
         
         // Initialize AMap
         initAMap()
         
         setupUI()
         updateMapProviderDisplay()
+        
+        // Initialize instruction text
+        binding.tvInstruction.text = "请点击地图设置起点"
     }
     
 
@@ -175,9 +184,9 @@ class MainActivityNew : AppCompatActivity() {
         // Enable location display
         enableMyLocation()
         
-        // Set map click listener to select destination
+        // Set map click listener for two-click mode (origin then destination)
         mapService.setOnMapClickListener { latLng ->
-            setDestination(latLng)
+            handleMapClick(latLng)
         }
         
         // Get current location
@@ -211,6 +220,35 @@ class MainActivityNew : AppCompatActivity() {
         }
     }
 
+    private fun handleMapClick(latLng: LatLng) {
+        clickCount++
+        
+        if (isSettingOrigin) {
+            setOrigin(latLng)
+        } else {
+            setDestination(latLng)
+        }
+    }
+    
+    private fun setOrigin(latLng: LatLng) {
+        // Clear previous origin marker
+        originMarker?.let {
+            mapService.removeMarker(it)
+        }
+        
+        // Add new origin marker and save location
+        originMarker = mapService.addMarker(latLng, "起点")
+        originLocation = latLng
+        
+        isSettingOrigin = false
+        addLog("起点已设置: ${latLng.latitude}, ${latLng.longitude}")
+        addLog("请点击地图设置终点")
+        Toast.makeText(this, "起点已设置，请点击地图设置终点", Toast.LENGTH_SHORT).show()
+        
+        // Update instruction text
+        binding.tvInstruction.text = "请点击地图设置终点"
+    }
+    
     private fun setDestination(latLng: LatLng) {
         // Clear previous destination marker
         destinationMarker?.let {
@@ -218,35 +256,49 @@ class MainActivityNew : AppCompatActivity() {
         }
         
         // Add new destination marker and save location
-        destinationMarker = mapService.addMarker(latLng, "Destination")
+        destinationMarker = mapService.addMarker(latLng, "终点")
         destinationLocation = latLng
         
         binding.btnStartNavigation.isEnabled = true
-        addLog("Destination set: ${latLng.latitude}, ${latLng.longitude}")
-        addLog("destinationLocation variable updated: ${destinationLocation?.let { it.latitude.toString() + ", " + it.longitude.toString() } ?: "null"}")
-        Toast.makeText(this, getString(R.string.destination_set), Toast.LENGTH_SHORT).show()
+        addLog("终点已设置: ${latLng.latitude}, ${latLng.longitude}")
+        addLog("起点和终点都已设置，可以开始导航")
+        Toast.makeText(this, "终点已设置，可以开始导航", Toast.LENGTH_SHORT).show()
+        
+        // Update instruction text
+        binding.tvInstruction.text = "起点和终点已设置，点击开始导航"
     }
 
     private fun startNavigation() {
-        addLog("Starting navigation")
-        addLog("Current location: ${currentLocation?.let { it.latitude.toString() + ", " + it.longitude.toString() } ?: "null"}")
-        addLog("Destination location: ${destinationLocation?.let { it.latitude.toString() + ", " + it.longitude.toString() } ?: "null"}")
+        addLog("=== 开始导航流程 ===")
         
-        if (currentLocation == null || destinationLocation == null) {
-            Toast.makeText(this, "Please set destination first", Toast.LENGTH_SHORT).show()
-            addLog("Navigation failed: destination not set - currentLocation=${currentLocation != null}, destinationLocation=${destinationLocation != null}")
+        // Check if both origin and destination are set
+        if (originLocation == null) {
+            Toast.makeText(this, "请先点击地图设置起点", Toast.LENGTH_SHORT).show()
+            addLog("导航失败: 起点未设置")
             return
         }
-
-        val origin = LatLng(currentLocation!!.latitude, currentLocation!!.longitude)
-        val destination = destinationLocation!!
-        addLog("Route planning: from " + origin.latitude + ", " + origin.longitude + " to " + destination.latitude + ", " + destination.longitude)
         
-        // Get route
-        addLog("Requesting route planning...")
+        if (destinationLocation == null) {
+            Toast.makeText(this, "请先点击地图设置终点", Toast.LENGTH_SHORT).show()
+            addLog("导航失败: 终点未设置")
+            return
+        }
+        
+        val origin = originLocation!!
+        val destination = destinationLocation!!
+        
+        addLog("=== 导航起始信息 ===")
+        addLog("用户设置的起点坐标: ${origin.latitude}, ${origin.longitude}")
+        addLog("用户设置的终点坐标: ${destination.latitude}, ${destination.longitude}")
+        addLog("开始路径规划...")
+        
+        // 开始路径规划
         directionsHelper.getDirections(origin, destination) { route ->
             route?.let {
-                addLog("Route planning successful, obtained ${it.size} path points")
+                addLog("路径规划成功，获得 ${it.size} 个路径点")
+                addLog("路线起点: ${it.first().latitude}, ${it.first().longitude}")
+                addLog("路线终点: ${it.last().latitude}, ${it.last().longitude}")
+                
                 displayRoute(it)
                 isNavigating = true
                 tripStartTime = System.currentTimeMillis()
@@ -255,17 +307,14 @@ class MainActivityNew : AppCompatActivity() {
                 // Start real-time location updates
                 startLocationUpdates()
                 
-                addLog("Navigation started")
-                Toast.makeText(this, getString(R.string.navigation_started), Toast.LENGTH_SHORT).show()
+                addLog("导航已开始")
+                Toast.makeText(this@MainActivityNew, getString(R.string.navigation_started), Toast.LENGTH_SHORT).show()
+                
+                // Update instruction text
+                binding.tvInstruction.text = "导航进行中"
             } ?: run {
-                addLog("Route planning failed: unable to get route")
-                addLog("Please check the following possible causes:")
-                addLog("1. Is network connection normal")
-                addLog("2. Is API key valid")
-                addLog("3. Are start and end coordinates correct")
-                addLog("4. Is AMap service available")
-                addLog("For detailed error information, please check Logcat logs (tag: DirectionsHelper)")
-                Toast.makeText(this, "Unable to get route, please check logs for detailed reasons", Toast.LENGTH_LONG).show()
+                addLog("路径规划失败")
+                Toast.makeText(this@MainActivityNew, "路径规划失败，请重试", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -273,6 +322,24 @@ class MainActivityNew : AppCompatActivity() {
     private fun stopNavigation() {
         isNavigating = false
         binding.btnStartNavigation.text = getString(R.string.start_navigation)
+        binding.btnStartNavigation.isEnabled = false
+        
+        // Clear all markers
+        originMarker?.let {
+            mapService.removeMarker(it)
+            originMarker = null
+        }
+        
+        destinationMarker?.let {
+            mapService.removeMarker(it)
+            destinationMarker = null
+        }
+        
+        // Reset two-click mode state
+        isSettingOrigin = true
+        clickCount = 0
+        originLocation = null
+        destinationLocation = null
         
         // Stop location updates
         locationHelper.stopLocationUpdates()
@@ -285,6 +352,11 @@ class MainActivityNew : AppCompatActivity() {
             mapService.removeRoute(it)
             currentRoute = null
         }
+        
+        // Update instruction text
+        binding.tvInstruction.text = "请点击地图设置起点"
+        
+        addLog("导航已停止，已重置所有设置")
     }
 
     private fun displayRoute(points: List<LatLng>) {
@@ -418,7 +490,7 @@ class MainActivityNew : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 addLog("Starting AMap API connection test...")
-                val directionsHelper = DirectionsHelper(this@MainActivityNew)
+                // Use the existing directionsHelper instance instead of creating a new one
                 val success = directionsHelper.testApiConnection()
                 
                 if (success) {

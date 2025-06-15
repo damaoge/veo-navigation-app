@@ -90,49 +90,50 @@ class DirectionsHelper(private val context: Context) {
      */
     suspend fun testApiConnection(): Boolean {
         return withContext(Dispatchers.IO) {
-            logD("=== 开始高德地图API连接测试 ===")
-            logD("[测试配置] 测试目的: 验证API密钥和网络连接")
+            logD("=== 🧪 API连接测试 (非导航请求) ===")
+            logD("[🧪测试配置] 测试目的: 验证API密钥和网络连接")
+            logD("[🧪测试配置] 注意: 这是测试请求，使用固定测试坐标，不影响实际导航")
             
             // 使用北京天安门到故宫的测试路线
             val testOrigin = LatLng(39.908823, 116.397470) // 天安门
             val testDestination = LatLng(39.916668, 116.397026) // 故宫
             
-            logD("[测试配置] 测试起点: 天安门 (${testOrigin.latitude}, ${testOrigin.longitude})")
-            logD("[测试配置] 测试终点: 故宫 (${testDestination.latitude}, ${testDestination.longitude})")
-            logD("[测试配置] 预期距离: 约1-2公里")
+            logD("[🧪测试配置] 测试起点: 天安门 (${testOrigin.latitude}, ${testOrigin.longitude})")
+            logD("[🧪测试配置] 测试终点: 故宫 (${testDestination.latitude}, ${testDestination.longitude})")
+            logD("[🧪测试配置] 预期距离: 约1-2公里")
             
             val testStartTime = System.currentTimeMillis()
-            logD("[测试执行] 开始调用fetchDirections...")
+            logD("[🧪测试执行] 开始调用fetchDirections...")
             
             val result = fetchDirections(testOrigin, testDestination)
             
             val testEndTime = System.currentTimeMillis()
             val testDuration = testEndTime - testStartTime
             
-            logD("[测试结果] 测试耗时: ${testDuration}ms")
+            logD("[🧪测试结果] 测试耗时: ${testDuration}ms")
             
             val success = result != null && result.isNotEmpty()
             
             if (success) {
-                logD("[测试结果] ✅ API连接测试成功")
-                logD("[测试结果] 获得坐标点数量: ${result!!.size}")
+                logD("[🧪测试结果] ✅ API连接测试成功")
+                logD("[🧪测试结果] 获得坐标点数量: ${result!!.size}")
                 if (result.size >= 2) {
-                    logD("[测试结果] 路线起点: (${result.first().latitude}, ${result.first().longitude})")
-                    logD("[测试结果] 路线终点: (${result.last().latitude}, ${result.last().longitude})")
+                    logD("[🧪测试结果] 路线起点: (${result.first().latitude}, ${result.first().longitude})")
+                    logD("[🧪测试结果] 路线终点: (${result.last().latitude}, ${result.last().longitude})")
                 }
-                logD("[测试结果] API密钥有效，网络连接正常，响应解析成功")
+                logD("[🧪测试结果] API密钥有效，网络连接正常，响应解析成功")
             } else {
-                logE("[测试结果] ❌ API连接测试失败")
-                logE("[测试结果] 可能原因:")
-                logE("[测试结果] 1. API密钥无效或过期")
-                logE("[测试结果] 2. 网络连接问题")
-                logE("[测试结果] 3. 高德地图服务不可用")
-                logE("[测试结果] 4. 请求参数格式错误")
-                logE("[测试结果] 5. 响应解析失败")
-                logE("[测试结果] 请查看上方详细日志进行排查")
+                logE("[🧪测试结果] ❌ API连接测试失败")
+                logE("[🧪测试结果] 可能原因:")
+                logE("[🧪测试结果] 1. API密钥无效或过期")
+                logE("[🧪测试结果] 2. 网络连接问题")
+                logE("[🧪测试结果] 3. 高德地图服务不可用")
+                logE("[🧪测试结果] 4. 请求参数格式错误")
+                logE("[🧪测试结果] 5. 响应解析失败")
+                logE("[🧪测试结果] 请查看上方详细日志进行排查")
             }
             
-            logD("=== 高德地图API连接测试结束 ===")
+            logD("=== 🧪 高德地图API连接测试完成 ===")
             success
         }
     }
@@ -143,7 +144,8 @@ class DirectionsHelper(private val context: Context) {
     private suspend fun fetchDirections(origin: LatLng, destination: LatLng): List<LatLng>? {
         var connection: HttpURLConnection? = null
         return try {
-            logD("=== 开始路线规划SDK调用 ===")
+            logD("=== 开始正常导航路线规划 ===")
+            logD("[导航请求] 这是用户实际导航请求，非测试请求")
             
             // 1. 构建请求参数
             val originStr = "${origin.longitude},${origin.latitude}"

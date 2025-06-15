@@ -39,6 +39,8 @@ data class TripSummary(
     // Calculate average speed (km/h)
     fun getAverageSpeed(): Float {
         if (duration == 0L) return 0f
+        // If distance is too small (less than 10 meters), consider as not moving
+        if (distance < 10f) return 0f
         val distanceInKm = distance / 1000f
         val timeInHours = duration / (1000f * 3600f)
         return distanceInKm / timeInHours
