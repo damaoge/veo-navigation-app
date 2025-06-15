@@ -163,7 +163,7 @@ A: 查看Logcat输出，检查是否有权限或API相关错误
 
 ## 联系方式
 
-- 项目维护者: Veo Team
+- 项目维护者: haisilen
 - 邮箱: haisilen@163.com
 
 ---
