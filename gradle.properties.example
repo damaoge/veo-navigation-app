@@ -1,0 +1,11 @@
+# Keystore配置示例
+# 复制此文件为 gradle.properties 并填入实际的密码
+# 注意：gradle.properties 文件不应提交到版本控制系统
+
+# Keystore密码配置
+KEYSTORE_PASSWORD=123456
+KEY_PASSWORD=123456
+KEY_ALIAS=key0
+
+# 高德地图API Key (如果需要)
+# AMAP_API_KEY=your_amap_api_key_here
