@@ -51,10 +51,17 @@ class MainActivityNew : AppCompatActivity() {
     private var isNavigating = false
     private var tripStartTime: Long = 0
     private var totalDistance: Float = 0f
+    private var actualWalkedDistance: Float = 0f
+    private var currentSpeed: Float = 0f
+    private var lastLocationTime: Long = 0L
     
     // Two-click mode state
     private var isSettingOrigin = true // true: setting origin, false: setting destination
     private var clickCount = 0
+    
+    // User path tracking
+    private val userPath = mutableListOf<LatLng>()
+    private var userPathRoute: Any? = null
     
     // AMap related
     private var aMap: AMap? = null
@@ -299,6 +306,25 @@ class MainActivityNew : AppCompatActivity() {
                 addLog("路线起点: ${it.first().latitude}, ${it.first().longitude}")
                 addLog("路线终点: ${it.last().latitude}, ${it.last().longitude}")
                 
+                // Clear previous user path and reset tracking variables
+                userPath.clear()
+                userPathRoute?.let { pathRoute ->
+                    mapService.removeRoute(pathRoute)
+                    userPathRoute = null
+                }
+                actualWalkedDistance = 0f
+                currentSpeed = 0f
+                lastLocationTime = 0L
+                addLog("已清空之前的用户路径，重置距离和速度追踪，准备开始新的路径追踪")
+                
+                // Add current location as the first point of user path
+                currentLocation?.let { location ->
+                    val currentLatLng = LatLng(location.latitude, location.longitude)
+                    userPath.add(currentLatLng)
+                    lastLocationTime = System.currentTimeMillis()
+                    addLog("已将当前位置设为用户路径起点: ${location.latitude}, ${location.longitude}")
+                }
+                
                 displayRoute(it)
                 isNavigating = true
                 tripStartTime = System.currentTimeMillis()
@@ -307,7 +333,7 @@ class MainActivityNew : AppCompatActivity() {
                 // Start real-time location updates
                 startLocationUpdates()
                 
-                addLog("导航已开始")
+                addLog("导航已开始，开始实时追踪用户路径")
                 Toast.makeText(this@MainActivityNew, getString(R.string.navigation_started), Toast.LENGTH_SHORT).show()
                 
                 // Update instruction text
@@ -353,10 +379,28 @@ class MainActivityNew : AppCompatActivity() {
             currentRoute = null
         }
         
+        // Record user path statistics before clearing
+        val pathPointsCount = userPath.size
+        val finalWalkedDistance = actualWalkedDistance
+        
+        // Clear user path
+        userPathRoute?.let {
+            mapService.removeRoute(it)
+            userPathRoute = null
+        }
+        userPath.clear()
+        
+        // Reset tracking variables
+        actualWalkedDistance = 0f
+        currentSpeed = 0f
+        lastLocationTime = 0L
+        
         // Update instruction text
         binding.tvInstruction.text = "请点击地图设置起点"
         
-        addLog("导航已停止，已重置所有设置")
+        addLog("导航已停止，已清除用户路径，重置所有设置")
+        addLog("本次导航共记录了 ${pathPointsCount} 个路径点")
+        addLog("本次导航实际走过距离: ${String.format("%.1f", finalWalkedDistance)}m")
     }
 
     private fun displayRoute(points: List<LatLng>) {
@@ -393,19 +437,89 @@ class MainActivityNew : AppCompatActivity() {
     private fun startLocationUpdates() {
         locationHelper.startLocationUpdates { location ->
             if (isNavigating) {
+                val currentTime = System.currentTimeMillis()
+                val currentLatLng = LatLng(location.latitude, location.longitude)
+                
+                // Calculate actual walked distance and speed
+                if (userPath.isNotEmpty()) {
+                    val lastPoint = userPath.last()
+                    val results = FloatArray(1)
+                    Location.distanceBetween(
+                        lastPoint.latitude, lastPoint.longitude,
+                        currentLatLng.latitude, currentLatLng.longitude,
+                        results
+                    )
+                    val distanceFromLast = results[0]
+                    
+                    // Only add distance if movement is significant (> 1 meter)
+                    if (distanceFromLast > 1.0f) {
+                        actualWalkedDistance += distanceFromLast
+                        
+                        // Calculate current speed
+                        if (lastLocationTime > 0) {
+                            val timeDiff = (currentTime - lastLocationTime) / 1000f // seconds
+                            if (timeDiff > 0) {
+                                currentSpeed = (distanceFromLast / timeDiff) * 3.6f // m/s to km/h
+                            }
+                        }
+                        lastLocationTime = currentTime
+                        
+                        addLog("移动距离: ${String.format("%.1f", distanceFromLast)}m, 当前速度: ${String.format("%.1f", currentSpeed)}km/h")
+                    } else {
+                        // If not moving significantly, speed is 0
+                        currentSpeed = 0f
+                    }
+                } else {
+                    lastLocationTime = currentTime
+                }
+                
                 currentLocation = location
-                // Navigation guidance logic can be added here
+                userPath.add(currentLatLng)
+                
+                // Update user path visualization
+                updateUserPath()
+                
+                addLog("用户位置更新: ${location.latitude}, ${location.longitude}")
+                addLog("已记录路径点数: ${userPath.size}, 实际走过距离: ${String.format("%.1f", actualWalkedDistance)}m")
             }
+        }
+    }
+    
+    private fun updateUserPath() {
+        if (userPath.size >= 2) {
+            // Clear previous user path route
+            userPathRoute?.let {
+                mapService.removeRoute(it)
+            }
+            
+            // Draw new user path in green color
+            userPathRoute = mapService.drawRoute(
+                userPath,
+                ContextCompat.getColor(this, android.R.color.holo_green_dark),
+                6f
+            )
+            
+            addLog("用户路径已更新，当前路径点数: ${userPath.size}")
         }
     }
 
     private fun showTripSummary() {
         val tripDuration = System.currentTimeMillis() - tripStartTime
+        
+        // Use actual walked distance instead of planned route distance
+        val actualDistance = if (actualWalkedDistance > 0) actualWalkedDistance else 0f
+        
         val tripSummary = TripSummary(
             duration = tripDuration,
-            distance = totalDistance,
-            route = emptyList() // Simplified processing
+            distance = actualDistance,
+            route = userPath // Use actual user path
         )
+        
+        addLog("=== 导航统计 ===")
+        addLog("导航时长: ${tripSummary.getFormattedDuration()}")
+        addLog("实际走过距离: ${tripSummary.getFormattedDistance()}")
+        addLog("平均速度: ${tripSummary.getFormattedAverageSpeed()}")
+        addLog("当前速度: ${String.format("%.1f", currentSpeed)} km/h")
         
         // Show summary dialog
         TripSummaryDialog.show(this, tripSummary)
