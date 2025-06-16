@@ -97,63 +97,7 @@ stopNavigation()
 1. **克隆仓库**
    ```bash
    git clone <repository-url>
-   cd veo-navigation-app
    ```
-
-2. **配置API密钥**
-   ```bash
-   # 创建 local.properties
-   echo "AMAP_API_KEY=your_api_key_here" > local.properties
-   ```
-
-3. **设置签名** (用于发布版本)
-   ```bash
-   cp gradle.properties.example gradle.properties
-   # 编辑 gradle.properties 填入你的签名信息
-   ```
-
-4. **构建和运行**
-   ```bash
-   ./gradlew assembleDebug
-   ./gradlew installDebug
-   ```
-
-### 🔧 扩展开发
-
-添加新功能时，创建扩展方法:
-
-```kotlin
-// 示例: 添加新的地图功能
-fun MainActivityNew.customMapOperation() {
-    aMap?.let { map ->
-        // 你的自定义地图操作
-        addLog("自定义操作完成")
-    }
-}
-```
-
-### 🧪 测试
-
-#### 调试命令
-```bash
-# 查看实时日志
-adb logcat | grep "VeoNavigation"
-
-# 安装调试版本
-./gradlew installDebug
-
-# 生成调试APK
-./gradlew assembleDebug
-```
-
-#### 发布构建
-```bash
-# 生成签名的发布APK
-./gradlew assembleRelease
-
-# 生成Play Store的AAB
-./gradlew bundleRelease
-```
 
 ## 使用说明
 
